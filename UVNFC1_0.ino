@@ -18,6 +18,8 @@ byte TFLAG = 0;
 byte NFCFLAG = 0;
 boolean CORR_APP = false;
 
+byte BUFFER[10324];
+
 
 
 
@@ -76,18 +78,18 @@ boolean array_cmp(int a[], byte b[], int len){
 
 
 /* this function checks if the NDEF data is from the correct app and returns the NDEF data as a byte array*/
-void Get_NDEF_Data(byte *buffer){
+void Get_NDEF_Data(void){
     byte R_mime[27];
     int x;
     
     uint16_t NDEFMessageLength = 0;                        //get the NDEF Message Length 
-    nfc.Read_Continuous(0, buffer, (uint16_t)0x1C);
-    NDEFMessageLength = buffer[0x1A] << 8 | buffer[0x1B];
+    nfc.Read_Continuous(0, BUFFER, (uint16_t)0x1C);
+    NDEFMessageLength = BUFFER[0x1A] << 8 | BUFFER[0x1B];
     Tag4Length = NDEFMessageLength + 0x1C;                 // entire Tag length  
-    nfc.Read_Continuous(0, buffer, Tag4Length);            //get the entire tag data
+    nfc.Read_Continuous(0, BUFFER, Tag4Length);            //get the entire tag data
     
     for(x=0x1F; x<=0x39; x++){                             //extrace AAR from message
-      R_mime[x-0x1F]=buffer[x];
+      R_mime[x-0x1F]=BUFFER[x];
     }
     if (array_cmp(R_mime, MIME_TYPE, 27) == true){             //check if message is from correct app
             CORR_APP=true;
@@ -97,10 +99,10 @@ void Get_NDEF_Data(byte *buffer){
 }
   
 /*this function copys data from the nedf message to the header in EEPROM*/
-void Copy_Header_To_Memory(byte data[1024]){
+void Copy_Header_To_Memory(){
   int i;
   for(i=0; i<6; i++){            //copy the data from the phone to the EEPROM (Rory thinks the payload starts at byte 63 may be 62)
-    EEPROM_Write(i, data[i+63]);
+    EEPROM_Write(i, BUFFER[i+63]);
   }
   for (i=6; i<9; i++){           //set the 3 bytes of the mesurment counter in EEPROM to zero
     EEPROM_Write(1, 0);
@@ -121,12 +123,11 @@ void loop (void){
       Stop_Meas();                          //stop makeing measurments
     }
     if(flags & EOW_INT_FLAG){               //if the phone sends data to the device
-      byte data[1024];
-      Get_NDEF_Data(&data);          //get the NDEF data and check it is from the correct app
+      Get_NDEF_Data();          //get the NDEF data and check it is from the correct app
       if(CORR_APP==true){                   //if correct app
-        Copy_Header_To_Memory(data[]);      //copy the NDEF data into the header in EEPROM
+        Copy_Header_To_Memory();      //copy the NDEF data into the header in EEPROM
         EEPROM_ADR=10;                      //set the EEPROM pointer to after the header
-        TIMER_NO= (data[69]*10);            //setup the number of interupts between mesurments
+        TIMER_NO= (BUFFER[69]*10);            //setup the number of interupts between mesurments
       }
     }
   }
