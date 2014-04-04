@@ -68,7 +68,7 @@ void Stop_Meas(void){
 
 
 /*this function compares two arrays and returns whither or not they are the sane as an boolean*/
-boolean array_cmp(int *a, int *b, int len){
+boolean array_cmp(int a[], byte b[], int len){
       int n;
       for (n=0;n<len;n++) if (a[n]!=b[n]) return false;    // test each element to be the same. if not, return false
       return true;                                           //ok, if we have not returned yet, they are equal
@@ -89,11 +89,11 @@ void Get_NDEF_Data(byte *buffer){
     for(x=0x1F; x<=0x39; x++){                             //extrace AAR from message
       R_mime[x-0x1F]=buffer[x];
     }
-    if (array_cmp(&R_mime, &MIME_TYPE, 27) == true){             //check if message is from correct app
+    if (array_cmp(R_mime, MIME_TYPE, 27) == true){             //check if message is from correct app
             CORR_APP=true;
-      }else{
+     }else{
             CORR_APP= false;
-      }
+     }
 }
   
 /*this function copys data from the nedf message to the header in EEPROM*/
